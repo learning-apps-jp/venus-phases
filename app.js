@@ -31,7 +31,7 @@ function render(){
   $('#percent').textContent=`見える面の光る割合 ${pct}%`;
   $('#unseen').hidden=Math.abs(g.elong)>7;
   $('#phase').textContent=phaseName(g.lit);
-  $('#insight').textContent=!variable?'同じ大きさで、形を比べる':g.d<.75?'地球に近い → 大きく、細く':g.d>1.25?'地球から遠い → 小さく、丸く':'形と大きさが、いっしょに変わる';
+  $('#insight').textContent=!variable?'同じ大きさで、形を比べる':g.d<.75?'地球に近い → 大きく見える':g.d>1.25?'地球から遠い → 小さく見える':'形と大きさが、いっしょに変わる';
   $('#size').setAttribute('aria-pressed',String(variable));
   $('#size').textContent=variable?'大きさも変える ✓':'同じ大きさで比べる';
   [...$('#presets').children].forEach((b,i)=>{const active=Math.abs(angle-presets[i])<6;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
@@ -39,3 +39,4 @@ function render(){
 function stop(){playing=false;$('#play').textContent='▶ 自動で動かす';$('#play').setAttribute('aria-pressed','false');}function tick(time){if(playing&&last) {angle=(angle+Math.min(time-last,80)*.012)%360;render()}last=time;requestAnimationFrame(tick)}
 $('#play').addEventListener('click',()=>{playing=!playing;$('#play').textContent=playing?'Ⅱ 一時停止':'▶ 自動で動かす';$('#play').setAttribute('aria-pressed',String(playing));last=0});$('#reset').addEventListener('click',()=>{stop();angle=45;variable=true;render()});$('#size').addEventListener('click',()=>{variable=!variable;render()});$('#position').addEventListener('input',e=>{stop();angle=+e.target.value;render()});let dragging=false;function point(e){const p=$('#orbit').createSVGPoint();p.x=e.clientX;p.y=e.clientY;const a=p.matrixTransform($('#orbit').getScreenCTM().inverse());if(Math.hypot(a.x-300,a.y-220)<30)return;angle=(Math.atan2(300-a.x,220-a.y)*180/Math.PI+360)%360;render()}$('#orbit').addEventListener('pointerdown',e=>{dragging=true;stop();$('#orbit').setPointerCapture(e.pointerId);point(e)});$('#orbit').addEventListener('pointermove',e=>{if(dragging)point(e)});for(const name of ['pointerup','pointercancel','lostpointercapture'])$('#orbit').addEventListener(name,()=>dragging=false);$('#venus').addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();stop();angle=e.key==='Home'?0:e.key==='End'?360:(angle+(e.key==='ArrowRight'?5:-5)+360)%360;render()});document.addEventListener('visibilitychange',()=>{if(document.hidden)stop()});render();requestAnimationFrame(tick);
 if(typeof module!=='undefined')module.exports={geometry,phaseName};
+
