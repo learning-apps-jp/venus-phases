@@ -6,7 +6,36 @@ let angle=45,playing=false,variable=true,last=0;const presets=[0,45,Math.acos(-R
 const svgNS='http://www.w3.org/2000/svg';function svgEl(tag,attrs){const e=document.createElementNS(svgNS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);return e;}
 for(let i=0;i<8;i++){const b=document.createElement('button'),c=document.createElement('canvas');c.width=100;c.height=80;disk(c,geometry(presets[i]),presets[i]===180?32:24);b.append(c,document.createTextNode(names[i]));b.addEventListener('click',()=>{stop();angle=presets[i];render()});$('#presets').append(b);const t=presets[i]*Math.PI/180;$('#stops').append(svgEl('circle',{cx:300-135*Math.sin(t),cy:220-135*Math.cos(t),r:4,fill:'#a6a28e',opacity:'.7'}));}
 for(let i=0;i<8;i++){const t=i*TAU/8;$('#rays').append(svgEl('path',{d:`M${300+45*Math.sin(t)} ${220+45*Math.cos(t)}L${300+103*Math.sin(t)} ${220+103*Math.cos(t)}`}));}
-function render(){const g=geometry(angle),x=300+g.x/R*135,y=220+g.y/R*135;$('#venus').setAttribute('transform',`translate(${x},${y})`);$('#venus').setAttribute('aria-valuenow',Math.round(angle));$('#venus').setAttribute('aria-valuetext',`${Math.round(angle)}度、光る割合${Math.round(g.lit*100)}パーセント`);const rot=Math.atan2(220-y,300-x)*180/Math.PI;$('#venusLight').setAttribute('d','M0 -13A13 13 0 0 1 0 13Z');$('#venusLight').setAttribute('transform',`rotate(${rot})`);$('#sight').setAttribute('d',`M300 407L${x} ${y}`);disk($('#disk'),g,variable?52/g.d:155);$('#position').value=angle;$('#percent').textContent=`光る割合 ${Math.round(g.lit*100)}%`;$('#unseen').hidden=Math.abs(g.elong)>7;let phase=g.lit<.02?'ほぼ見えない':g.lit<.42?'細い金星':g.lit<.58?'半分の金星':g.lit<.98?'丸みのある金星':'丸い金星';$('#phase').textContent=phase;$('#insight').textContent=g.d<.75?'地球に近い → 大きく、細く':g.d>1.25?'地球から遠い → 小さく、丸く':'太陽側の半分が、光っている';const evening=g.elong>=0;$('#skyTime').textContent=Math.abs(g.elong)<7?'太陽に近い位置':evening?'よいの明星 · 夕方、西の空':'明けの明星 · 明け方、東の空';$('#direction').textContent=evening?'西の空':'東の空';const skyX=210-g.elong*3,skyY=75-Math.abs(g.elong)*1.1;$('#skyVenus').setAttribute('transform',`translate(${skyX},${skyY})`);$('#skyVenus').setAttribute('opacity',Math.abs(g.elong)<7?'.15':'1');$('#size').setAttribute('aria-pressed',String(variable));$('#size').textContent=variable?'大きさも変える ✓':'同じ大きさで比べる';[...$('#presets').children].forEach((b,i)=>{const active=Math.abs(angle-presets[i])<6;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});}
+function phaseName(lit){
+  if(lit<1e-6)return '暗い面がこちら側';
+  if(lit<.02)return 'とても細い金星';
+  if(lit<.42)return '細い金星';
+  if(Math.abs(lit-.5)<.002)return '半分の金星';
+  if(lit<.58)return '半分に近い金星';
+  if(lit<.98)return '丸みのある金星';
+  return lit>1-1e-6?'丸い金星':'ほぼ丸い金星';
+}
+function render(){
+  const g=geometry(angle),x=300+g.x/R*135,y=220+g.y/R*135;
+  $('#venus').setAttribute('transform',`translate(${x},${y})`);
+  $('#venus').setAttribute('aria-valuenow',Math.round(angle));
+  const pct=(g.lit*100).toFixed(1);
+  $('#venus').setAttribute('aria-valuetext',`${Math.round(angle)}度、見える面の光る割合${pct}パーセント`);
+  const rot=Math.atan2(220-y,300-x)*180/Math.PI;
+  $('#venusLight').setAttribute('d','M0 -13A13 13 0 0 1 0 13Z');
+  $('#venusLight').setAttribute('transform',`rotate(${rot})`);
+  $('#sight').setAttribute('d',`M300 407L${x} ${y}`);
+  disk($('#disk'),g,variable?52/g.d:155);
+  $('#disk').setAttribute('aria-label',`地球から見た金星：${phaseName(g.lit)}。見える面の光る割合${pct}パーセント。${variable?'距離に応じた大きさ':'大きさ固定'}`);
+  $('#position').value=angle;
+  $('#percent').textContent=`見える面の光る割合 ${pct}%`;
+  $('#unseen').hidden=Math.abs(g.elong)>7;
+  $('#phase').textContent=phaseName(g.lit);
+  $('#insight').textContent=!variable?'同じ大きさで、形を比べる':g.d<.75?'地球に近い → 大きく、細く':g.d>1.25?'地球から遠い → 小さく、丸く':'形と大きさが、いっしょに変わる';
+  $('#size').setAttribute('aria-pressed',String(variable));
+  $('#size').textContent=variable?'大きさも変える ✓':'同じ大きさで比べる';
+  [...$('#presets').children].forEach((b,i)=>{const active=Math.abs(angle-presets[i])<6;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+}
 function stop(){playing=false;$('#play').textContent='▶ 自動で動かす';$('#play').setAttribute('aria-pressed','false');}function tick(time){if(playing&&last) {angle=(angle+Math.min(time-last,80)*.012)%360;render()}last=time;requestAnimationFrame(tick)}
 $('#play').addEventListener('click',()=>{playing=!playing;$('#play').textContent=playing?'Ⅱ 一時停止':'▶ 自動で動かす';$('#play').setAttribute('aria-pressed',String(playing));last=0});$('#reset').addEventListener('click',()=>{stop();angle=45;variable=true;render()});$('#size').addEventListener('click',()=>{variable=!variable;render()});$('#position').addEventListener('input',e=>{stop();angle=+e.target.value;render()});let dragging=false;function point(e){const p=$('#orbit').createSVGPoint();p.x=e.clientX;p.y=e.clientY;const a=p.matrixTransform($('#orbit').getScreenCTM().inverse());if(Math.hypot(a.x-300,a.y-220)<30)return;angle=(Math.atan2(300-a.x,220-a.y)*180/Math.PI+360)%360;render()}$('#orbit').addEventListener('pointerdown',e=>{dragging=true;stop();$('#orbit').setPointerCapture(e.pointerId);point(e)});$('#orbit').addEventListener('pointermove',e=>{if(dragging)point(e)});for(const name of ['pointerup','pointercancel','lostpointercapture'])$('#orbit').addEventListener(name,()=>dragging=false);$('#venus').addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();stop();angle=e.key==='Home'?0:e.key==='End'?360:(angle+(e.key==='ArrowRight'?5:-5)+360)%360;render()});document.addEventListener('visibilitychange',()=>{if(document.hidden)stop()});render();requestAnimationFrame(tick);
-if(typeof module!=='undefined')module.exports={geometry};
+if(typeof module!=='undefined')module.exports={geometry,phaseName};
